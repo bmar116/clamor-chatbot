@@ -1,15 +1,15 @@
 
 # Clamor-Chatbot Discord Relay for BDS eXtended
 
-A simple chat relay plugin for a [BDSX][https://github.com/bdsx/bdsx]-enabled [Bedrock Dedicated Server][https://minecraft.fandom.com/wiki/Bedrock_Dedicated_Server].
+A simple chat relay plugin for a [BDSX](https://github.com/bdsx/bdsx)-enabled [Bedrock Dedicated Server](https://minecraft.fandom.com/wiki/Bedrock_Dedicated_Server).
 
 Custom join/leave and startup/shutdown messages are configurable, along with custom server message prefix.
 
-Code used from [TheShadowEevee/BDSX-Chatter-Plugin][https://github.com/TheShadowEevee/BDSX-Discord-Chatter-Plugin] and [7dev7urandom/bdsx-discord-chat][https://github.com/7dev7urandom/bdsx-discord-chat].
+Code used from [TheShadowEevee/BDSX-Chatter-Plugin](https://github.com/TheShadowEevee/BDSX-Discord-Chatter-Plugin) and [7dev7urandom/bdsx-discord-chat](https://github.com/7dev7urandom/bdsx-discord-chat).
 
 ## Installation
 
-Download the latest [Release][https://github.com/bmar116/Clamor-Chatbot/releases] and extract into the `bdsx/plugins` folder.
+Download the latest [Release](https://github.com/bmar116/Clamor-Chatbot/releases) and extract into the `bdsx/plugins` directory.
 
 ## Setup
 
@@ -29,7 +29,7 @@ Download the latest [Release][https://github.com/bmar116/Clamor-Chatbot/releases
 ## Configuration
 
 | Token | Type | Description | Default |
-|----|----|----|
+| ---- | ---- | ---- |
 | botEnable | boolean | Enables bot on startup | `false` |
 | token | string | Your bot token | `null` |
 | channel | string | Channel ID for chat messages | `null` |
@@ -38,11 +38,11 @@ Download the latest [Release][https://github.com/bmar116/Clamor-Chatbot/releases
 | discordActivityName | string | Name of Discord activity application | `Minecraft` |
 | enableChatRelay | boolean | Enables game <---> discord chat relay | `true` |
 | postDiscordToConsole | boolean | Posts Discord messages to console | `true` |
-| toGameChatPrefix | object | Prefix to use when sending messages to game. Supports Minecraft [formatting codes][https://minecraft.fandom.com/wiki/Formatting_codes]  |   |
+| toGameChatPrefix | object | Prefix to use when sending messages to game. Supports Minecraft [formatting codes](https://minecraft.fandom.com/wiki/Formatting_codes)  |   |
 | - start | string |   | `"<"` |
 | - serverName | string |   | `"§b[Discord]§r"` |
 | - end | string |   | `">"` |
-| toDiscordChatPrefix | object | Prefix surrounding username when relaying messages from game ---> discord. Supports [Discord formatting][https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-] |   |
+| toDiscordChatPrefix | object | Prefix surrounding username when relaying messages from game ---> discord. Supports [Discord formatting](https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-) |   |
 | - start | string |   | `"***<"` |
 | - end | string |   | `">***:"` |
 | enableStartStopMessages | boolean | Enables server start/stop messages | `true` |
@@ -59,6 +59,6 @@ Download the latest [Release][https://github.com/bmar116/Clamor-Chatbot/releases
 
 ## Note about discord.js
 
-The version of BDSX that this plugin was developed on uses a modified version of ChakraCore for Node ([bdsx/node-chakracore][https://github.com/bdsx/node-chakracore]. This version is built on top of v1.2.0.0-pre of NodeJS and does not support discord.js v.12.0.0 or higher.
+The version of BDSX that this plugin was developed on uses a modified version of ChakraCore for Node ([bdsx/node-chakracore](https://github.com/bdsx/node-chakracore)). This version is built on top of v1.2.0.0-pre of NodeJS and does not support discord.js v.12.0.0 or higher.
 
 Version 12 of discord.js introduces Intents which are neccessary to read messages in the latest versions of the Discord API. As such, Discord-to-Minecraft chat relay and Discord commands have been permanently disabled until BDSX updates to a newer version of Node.
