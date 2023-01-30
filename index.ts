@@ -1,9 +1,12 @@
-/* Clamor Bot Discord Bridge for BDSX
- * This is a plugin for BDSX
+/*
+ * Clamor Chatbot Discord Bridge for BDS eXtended
+ * This is a plugin for BDSX.
  * All code within this project is under the ISC License.
  * Copyright (c) 2023, Brandon M (bmar116) <bmar116@hotmail.com>.
- * Forked from BDSX-Discord-Chatter (https://github.com/TheShadowEevee/BDSX-Discord-Chatter-Plugin).
+ * Code used from TheShadowEevee/BDSX-Discord-Chatter-Plugin (https://github.com/TheShadowEevee/BDSX-Discord-Chatter-Plugin)
+ * And 7dev7urandom/bdsx-discord-chat (https://github.com/7dev7urandom/bdsx-discord-chat)
  */
+ 
 
 // imports and constants
 import { fsutil } from "bdsx/fsutil";
@@ -19,8 +22,8 @@ import { version } from "./package.json";
 import { defaultConfig } from "./defaultconfig";
 
 
-const pluginPrefix = "[clamor-chatbot]";
 const { Client } = require('discord.js');
+const pluginPrefix = "[clamor-chatbot]";
 const fs = require('fs');
 const configPath = path.join(
 	fsutil.projectPath,
@@ -28,9 +31,30 @@ const configPath = path.join(
 );
 
 
+// utility functions
+function plugin_log(text: string) { // logs timestamp + pluginPrefix + text to console
+	var date_time = new Date();
+	var timestamp = "[" + ("0" + date_time.getHours()).slice(-2) + ":" + ("0" + date_time.getMinutes()).slice(-2) + ":" + ("0" + date_time.getSeconds()).slice(-2) + "]";
+	console.log(timestamp + " " + pluginPrefix + " " + text);
+}
+
+// message relay functions
+// tellAllRaw code credited to 7dev7urandom (https://github.com/7dev7urandom/bdsx-discord-chat/blob/main/index.ts)
+function tellAllRaw(text: string) {
+	if (!bedrockServer.isLaunched()) return;
+	const packet = TextPacket.create();
+	packet.type = TextPacket.Types.Raw;
+	packet.message = text;
+	for(const i of bedrockServer.level.getPlayers()) {
+		i.sendPacket(packet);
+	}
+	packet.dispose();
+}
+
+
 // startup text
-console.log(pluginPrefix + " Starting Clamor-Chatbot.");
-console.log(pluginPrefix + ` Clamor-Chatbot is version ${version}.`);
+plugin_log("Starting Clamor-Chatbot.");
+plugin_log(`Clamor-Chatbot is version ${version}.`);
 
 
 // setup config file
@@ -51,7 +75,7 @@ if (!fsutil.isFileSync(configPath)) {
 		fsutil.mkdir(pcDir).then(
 			(onfulfilled) => { },
 			(onrejected) => {
-				console.log(pluginPrefix + ` Error creating default config.json file ${onrejected}`);
+				plugin_log(` Error creating default config.json file ${onrejected}`);
 			}
 		);
 	}
@@ -60,7 +84,7 @@ if (!fsutil.isFileSync(configPath)) {
 		fsutil.mkdir(dcDir).then(
 			(onfulfilled) => { },
 			(onrejected) => {
-				console.log(pluginPrefix + ` Error creating default config.json file ${onrejected}`);
+				plugin_log(` Error creating default config.json file ${onrejected}`);
 			}
 		);
 	}
@@ -72,48 +96,46 @@ if (!fsutil.isFileSync(configPath)) {
 			JSON.stringify({ ...defaultConfig, ...oldConfig}, null, 2)
 		).then(
 			(onfulfilled) => {
-				console.log("[clamor-chatbot] Created a default config.json file.");
-				if (oldConfig.token) console.log("[clamor-chatbot] Your old config was migrated.");
-				console.log("[clamor-chatbot] Please set your configuration values in the config.json!");
+				plugin_log("Created a default config.json file.");
+				if (oldConfig.token) plugin_log("Your old config was migrated.");
+				plugin_log("Please set your configuration values in the config.json!");
 			},
 			(onrejected) => {
-				console.log(pluginPrefix + ` Error creating default config.json file ${onrejected}`);
+				plugin_log(` Error creating default config.json file ${onrejected}`);
 			}
 		);
 	}
 }
+
 // read config
 fsutil.readFile(configPath).then((data) => {
 	config = JSON.parse(data);
 	const { channel, token } = config;
-	//proc.send({ event: "ready" });
 });
-console.log(pluginPrefix + " Config file loaded!");
+plugin_log("Config file loaded!");
 
 
 // setup Discord bot
-var bot = new Client({ disableEveryone: true, ws: { intents: ['GUILDS', 'GUILD_MESSAGES'] } });
+var bot = new Client({ disableEveryone: true });
 function loadBot() {
-	//if (bot) bot.destroy();
 	if (!config.botEnable) {
-		console.log(pluginPrefix + " Discord bot has been disabled. Chat messages will not be relayed.");
+		plugin_log("Discord bot has been disabled. Chat messages will not be relayed.");
 		return;
 	}
 	bot.login(config.token).catch((e: string) => {
 		if (e.toString().includes("token") || e.toString().includes("login")) {
-			console.log(pluginPrefix + " Error: The bot token provided in config.json is invalid.");
-			console.log(pluginPrefix + " Please provide a valid bot token to continue.");
+			plugin_log("Error: The bot token provided in config.json is invalid.");
+			plugin_log("Please provide a valid bot token to continue.");
 			disableBot();
 		} else {
-			console.log(pluginPrefix + " Uncaught Error! Cannot create bot hook.");
+			plugin_log("Uncaught Error! Cannot create bot hook.");
 			disableBot();
 			throw e;
 		}
 	});
 
-	bot.on("ready", () => {
+	bot.once("ready", () => {
 		console.info(pluginPrefix + ` Logged in as ${bot.user.tag}!`);
-		console.info(pluginPrefix + " Clamor Chatbot plugin has started.");
 		
 		bot.user.setPresence({
 			status: "online";
@@ -122,19 +144,11 @@ function loadBot() {
 				name: config.discordActivityName;
 			}
 		});
-		
-		if (!serverStarted && config.enableStartStopMessages) {
-			sendToDiscord(config.discordStartMessage);
-			serverStarted = true;
-		}
 	});
 	
-	
-	bot.on("messageCreate", (message) => {
-		console.log(message);
-	});
-
 	/*
+	 * Discord chat message reading is disabled until BDSX updates to node >= 12.0.0
+	 *
 	// if the bot receives the "!list" command, relay output of the bedrock "/list" command
 	// otherwise, relay message to game
 	bot.on("message", (data: any) => {
@@ -150,47 +164,35 @@ function loadBot() {
 
 function disableBot() {
 	config.botEnable = false;
-	console.log(pluginPrefix + " Discord bot has been disabled. Chat messages will not be relayed.");
+	plugin_log("Discord bot has been disabled. Chat messages will not be relayed.");
 }
+
 
 // message relay functions
-// tellAllRaw code credited to 7dev7urandom (https://github.com/7dev7urandom/bdsx-discord-chat/blob/main/index.ts)
-function tellAllRaw(text: string) {
-	if (!bedrockServer.isLaunched()) return;
-	const packet = TextPacket.create();
-	packet.type = TextPacket.Types.Raw;
-	packet.message = text;
-	for(const i of bedrockServer.level.getPlayers()) {
-		i.sendPacket(packet);
-	}
-	packet.dispose();
-}
-
 function sendToDiscord(message: string) {
 	if (!config.botEnable) return;
 	const chan = bot.channels.get(config.channel);
 	try {
 		chan.send(message).catch((e: any) => {
-			console.log(e);
 			if (e.toString().includes("Missing Permissions")) {
-				console.log(pluginPrefix + " Error sending Discord message: Missing permissions.");
-				console.log(pluginPrefix + " Ensure the bot is in your server AND it has send permissions in the relevant channel!");
+				plugin_log("Error sending Discord message: Missing permissions.");
+				plugin_log("Ensure the bot is in your server AND it has send permissions in the relevant channel!");
 			} else {
-				console.log(pluginPrefix + " Uncaught Error! Cannot send Discord message.");
+				plugin_log("Uncaught Error! Cannot send Discord message.");
 				throw e;
 			}
 		});
 	} catch (e) {
 		if (e.toString().includes("Unable to get property 'send'")) {
-			console.log("\n" + pluginPrefix + " Failed to send Discord message!");
-			console.log(pluginPrefix + " Either your bot token is incorrect or the channel ID is invalid.");
-			console.log(pluginPrefix + " Please check your config.json to continue.\n");
+			plugin_log("Failed to send Discord message!");
+			plugin_log("Either your bot token is incorrect or the channel ID is invalid.");
+			plugin_log("Please check your config.json to continue.\n");
 		} else if (e.toString().includes("ETIMEDOUT")) {
-			console.log("\n" + pluginPrefix + " Failed to send Discord message!");
-			console.log(pluginPrefix + " The request timed out. The message will not be sent.");
-			console.log(pluginPrefix + " Check the server connection and the Discord API status.\n");
+			plugin_log("Failed to send Discord message!");
+			plugin_log("The request timed out. The message will not be sent.");
+			plugin_log("Check the server connection and the Discord API status.\n");
 		} else {
-			console.log("\n" + pluginPrefix + " Uncaught Error! Failed to send Discord message.\n");
+			plugin_log("Uncaught Error! Failed to send Discord message.\n");
 			throw e;
 		}
 	}
@@ -212,28 +214,38 @@ function sendToGame(message: string, user: string) {
 		}
 	}
 	
-	var postToConsole = config.toGameChatPrefix.start + config.toGameChatPrefix.serverName + " " + user + config.toGameChatPrefix.end + " " + message;
+	var formattedMessage = config.toGameChatPrefix.start + config.toGameChatPrefix.serverName + " " + user + config.toGameChatPrefix.end + " " + message;
 	
-	tellAllRaw(postToConsole);
-	if (config.postDiscordToConsole) console.log(timestamp + " " + postToConsole);
+	tellAllRaw(formattedMessage);
+	if (config.postDiscordToConsole) plugin_log(formattedMessage);
 }
 
+/*
+ * Discord chat message reading is disabled until BDSX updates to node >= 12.0.0
+ *
 function listCommand() { // Discord "!list" command that sends player list to discord
 	const list = bedrockServer.executeCommand("list", CommandResultType.Data);
 	return list.data.statusMessage;
 }
+*/
 
 
 // Server startup
 var serverStarted = false;
 events.serverOpen.on(() => {
 	loadBot();
+	bot.once("ready", () => {
+		sendToDiscord(config.discordStartMessage);
+		console.info(pluginPrefix + " Clamor Chatbot plugin has started.");
+	});
 	
 	// Register command - reload bot
 	command.register("clamor", "Reloads Clamor-Chatbot Discord Relay").overload((param, origin, output) => {
-		console.log(pluginPrefix + " Reloading Clamor-Chatbot...");
+		plugin_log("Reloading Clamor-Chatbot...");
 		bot.destroy().then() => loadBot();
-		console.log(pluginPrefix + " Clamor-Chatbot reloaded.");
+		bot.once("ready", () => {
+			plugin_log("Clamor-Chatbot reloaded.");
+		});
 	},{});
 	
 });
@@ -241,7 +253,7 @@ events.serverOpen.on(() => {
 // Server shutdown
 events.serverClose.on(() => {
 	if (config.enableStartStopMessages) sendToDiscord(config.discordStopMessage); // Send shutdown message
-	console.log(pluginPrefix + " Plugin shutting down.");
+	plugin_log("Plugin shutting down.");
 	bot.destroy(); // Destroy bot
 });
 

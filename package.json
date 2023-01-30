@@ -13,7 +13,7 @@
     "prepare": "tsc || exit 0"
   },
   "devDependencies": {
-	"@types/node": "^16.6.0",
+	"@types/node": "^12.0.0",
     "bdsx": "file:../bdsx",
 	"typescript": "^4.2.3"
   },

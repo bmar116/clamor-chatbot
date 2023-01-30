@@ -27,5 +27,5 @@ export const defaultConfig = {
 		"start": "***<",
 		"end": "> has left the server!***"
 	},
-	"enableDiscordList": true
+	"enableDiscordList": false
 }
