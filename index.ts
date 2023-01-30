@@ -17,18 +17,18 @@ import { CommandResultType } from "bdsx/commandresult";
 import { TextPacket } from "bdsx/bds/packets";
 import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
 import { MinecraftPacketIds } from "bdsx/bds/packetids";
-import * as path from "path";
+import { join } from "path";
 import { version } from "./package.json";
 import { defaultConfig } from "./defaultconfig";
 
 
 const { Client } = require('discord.js');
 const pluginPrefix = "[clamor-chatbot]";
-const fs = require('fs');
-const configPath = path.join(
+const configPath = join(
 	fsutil.projectPath,
 	"plugin-configs/clamor-chatbot/config.json"
 );
+
 
 
 // utility functions
@@ -61,15 +61,15 @@ plugin_log(`Clamor-Chatbot is version ${version}.`);
 // if no config file found create one
 var config: any;
 if (!fsutil.isFileSync(configPath)) {
-	const oldConfigPath = path.join(fsutil.projectPath, "discordconfig.json"); // default config file
+	const oldConfigPath = join(fsutil.projectPath, "discordconfig.json"); // default config file
 	let oldConfig: any;
 	try {
-		oldConfig = JSON.parse(fs.readFileSync(oldConfigPath).toString());
+		oldConfig = JSON.parse(require('fs').readFileSync(oldConfigPath).toString());
 	} catch (e) {
 		oldConfig = {};
 	}
-	const pcDir = path.join(fsutil.projectPath, "plugin-configs/");
-	const dcDir = path.join(fsutil.projectPath, "plugin-configs/clamor-chatbot");
+	const pcDir = join(fsutil.projectPath, "plugin-configs/");
+	const dcDir = join(fsutil.projectPath, "plugin-configs/clamor-chatbot");
 	if (!fsutil.isDirectorySync(pcDir)) {
 		// if no plugin-configs directory attempt to make one
 		fsutil.mkdir(pcDir).then(
@@ -198,27 +198,31 @@ function sendToDiscord(message: string) {
 	}
 }
 
-function sendToGame(message: string, user: string) {
-	if (!config.botEnable) return;
-	//Timestamp
-	var date_time = new Date();
-	var timestamp = "[" + ("0" + date_time.getHours()).slice(-2) + ":" + ("0" + date_time.getMinutes()).slice(-2) + ":" + ("0" + date_time.getSeconds()).slice(-2) + "]";
-	
-	var potential_emotes=true;
-	while(potential_emotes == true) {
-		let emote = message.match(/.*<a?:(..+?(?=:[0-9]+>)):[0-9]+>.*/i);
-		if (emote == null) {
-			potential_emotes = false;
-		} else {
-			message = message.replace(new RegExp(`<a?:${emote[1]}:[0-9]+>`,'gi'), ":" + emote[1] + ":");
-		}
-	}
-	
-	var formattedMessage = config.toGameChatPrefix.start + config.toGameChatPrefix.serverName + " " + user + config.toGameChatPrefix.end + " " + message;
-	
-	tellAllRaw(formattedMessage);
-	if (config.postDiscordToConsole) plugin_log(formattedMessage);
-}
+/*
+ * Discord chat message reading is disabled until BDSX updates to node >= 12.0.0
+ *
+* function sendToGame(message: string, user: string) {
+* 	if (!config.botEnable) return;
+* 	//Timestamp
+* 	var date_time = new Date();
+* 	var timestamp = "[" + ("0" + date_time.getHours()).slice(-2) + ":" + ("0" + date_time.getMinutes()).slice(-2) + ":" + ("0" + date_time.getSeconds()).slice(-2) + "]";
+* 	
+* 	var potential_emotes=true;
+* 	while(potential_emotes == true) {
+* 		if (emote == null) {
+* 			potential_emotes = false;
+* 		} else {
+* 			message = message.replace(new RegExp(`<a?:${emote[1]}:[0-9]+>`,'gi'), ":" + emote[1] + ":");
+* 		}
+* 	}
+* 	
+* 	var formattedMessage = config.toGameChatPrefix.start + config.toGameChatPrefix.serverName + " " + user + config.toGameChatPrefix.end + " " + message;
+* 	
+* 	tellAllRaw(formattedMessage);
+* 	if (config.postDiscordToConsole) plugin_log(formattedMessage);
+* }
+*/
+
 
 /*
  * Discord chat message reading is disabled until BDSX updates to node >= 12.0.0
@@ -258,17 +262,24 @@ events.serverClose.on(() => {
 });
 
 // Player join
-events.playerJoin.on((ev) => {
-	if (config.enableJoinMessages) sendToDiscord(config.discordJoinMessage.start + ev.player.getName() + config.discordJoinMessage.end);
+events.playerJoin.on(({ player }) => {
+	if (config.enableJoinMessages) sendToDiscord(config.discordJoinMessage.start + player.getName() + config.discordJoinMessage.end);
 });
 
 // Player left
-events.playerLeft.on((ev) => {
-	if (config.enableJoinMessages) sendToDiscord(config.discordLeftMessage.start + ev.player.getName() + config.discordLeftMessage.end);
+events.playerLeft.on(({ player }) => {
+	if (config.enableJoinMessages) sendToDiscord(config.discordLeftMessage.start + player.getName() + config.discordLeftMessage.end);
 });
 
 // Relay chat message to Discord
-events.packetBefore(MinecraftPacketIds.Text).on((ev) => {
-	if (config.enableChatRelay) sendToDiscord(config.toDiscordChatPrefix.start + ev.name + config.toDiscordChatPrefix.end + " " + ev.message);
+events.packetBefore(MinecraftPacketIds.Text).on(({ name, message }) => {
+	// remove formatting codes
+	while (message.search("\u00a7") >= 0) {
+		let format_code = message.match("\u00a7");
+		if (format_code == null) break;
+		else ev.message = message.slice(format_code.index+2);
+	}
+	
+	if (config.enableChatRelay) sendToDiscord(config.toDiscordChatPrefix.start + name + config.toDiscordChatPrefix.end + " " + message);
 });
 
