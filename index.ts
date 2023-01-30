@@ -277,7 +277,7 @@ events.packetBefore(MinecraftPacketIds.Text).on(({ name, message }) => {
 	while (message.search("\u00a7") >= 0) {
 		let format_code = message.match("\u00a7");
 		if (format_code == null) break;
-		else ev.message = message.slice(format_code.index+2);
+		else message = message.slice(format_code.index+2);
 	}
 	
 	if (config.enableChatRelay) sendToDiscord(config.toDiscordChatPrefix.start + name + config.toDiscordChatPrefix.end + " " + message);

@@ -2,7 +2,7 @@ export const defaultConfig = {
 	"botEnable": false,
 	"token": "your bot token",
 	"channel": "chat channel id",
-	"discordActivityType": "playing", // From "PLAYING", "STREAMING", "LISTENING", "WATCHING", or "COMPETING". Case-insensitive. See https://discord.js.org/#/docs/main/stable/typedef/ActivityType
+	"discordActivityType": "playing",
 	"discordActivityName": "Minecraft",
 	"enableChatRelay": true,
 	"postDiscordToConsole": true,
