@@ -27,5 +27,6 @@ export const defaultConfig = {
 		"start": "***<",
 		"end": "> has left the server!***"
 	},
-	"enableDiscordList": false
+	"enableDiscordList": false,
+	"enableMemoryWatchdog": true
 }

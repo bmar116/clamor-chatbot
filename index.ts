@@ -18,6 +18,7 @@ import { TextPacket } from "bdsx/bds/packets";
 import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
 import { MinecraftPacketIds } from "bdsx/bds/packetids";
 import { join } from "path";
+import { totalmem, freemem } from "os";
 import { version } from "./package.json";
 import { defaultConfig } from "./defaultconfig";
 
@@ -51,10 +52,6 @@ function tellAllRaw(text: string) {
 	packet.dispose();
 }
 
-
-// startup text
-plugin_log("Starting Clamor-Chatbot.");
-plugin_log(`Clamor-Chatbot is version ${version}.`);
 
 
 // setup config file
@@ -235,15 +232,18 @@ function listCommand() { // Discord "!list" command that sends player list to di
 
 
 // Server startup
-var serverStarted = false;
+let memory_watchdog: any;
 events.serverOpen.on(() => {
+	plugin_log("Starting Clamor-Chatbot.");
+	plugin_log(`Clamor-Chatbot is version ${version}.`);
+	
 	loadBot();
 	bot.once("ready", () => {
 		sendToDiscord(config.discordStartMessage);
 		console.info(pluginPrefix + " Clamor Chatbot plugin has started.");
 	});
 	
-	// Register command - reload bot
+	// reload bot
 	command.register("clamor", "Reloads Clamor-Chatbot Discord Relay").overload((param, origin, output) => {
 		plugin_log("Reloading Clamor-Chatbot...");
 		bot.destroy().then() => loadBot();
@@ -252,13 +252,37 @@ events.serverOpen.on(() => {
 		});
 	},{});
 	
+	// get free memory
+	command.register("freemem", "Returns system memory state").overload((param, origin, output) => {
+		var totalMem = Number(((totalmem()/1024)/1024).toFixed(2));
+		var freeMem = Number(((freemem()/1024)/1024).toFixed(2));
+		var usedMem = totalMem - freeMem;
+		var percentMem = Math.round((usedMem/totalMem)*100);
+		
+		output.success(`Total Memory: ${totalMem}M\nUsed Memory: ${usedMem}M/${percentMem}%\nFree Memory: ${freeMem}`);
+	},{});
+	
+	// memory watchdog
+	if(config.enableMemoryWatchdog){
+		mem_watchdog = setInterval(function() {
+			if((freemem()/totalmem()) <= 0.10){
+				sendToDiscord("@Admin Memory is low! Server will restart soon.");
+				tellAllRaw("[Server] Memory is low! Server will restart soon.");
+				clearInterval(mem_watchdog);
+				setTimeout(function() {
+					tellAllRaw("[Server] Low memory. Server shutting down...");
+					bedrockServer.stop();
+				},10000);
+			}
+		},1000);
+	}
 });
 
 // Server shutdown
 events.serverClose.on(() => {
 	if (config.enableStartStopMessages) sendToDiscord(config.discordStopMessage); // Send shutdown message
-	plugin_log("Plugin shutting down.");
-	bot.destroy(); // Destroy bot
+	bot.destroy().then => { plugin_log("Plugin shutting down."); bot = null; }; // Destroy bot
+	clearInterval(mem_watchdog);
 });
 
 // Player join
