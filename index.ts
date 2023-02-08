@@ -113,7 +113,7 @@ plugin_log("Config file loaded!");
 
 
 // setup Discord bot
-var bot = new Client({ disableEveryone: true });
+const bot = new Client({ disableEveryone: true });
 function loadBot() {
 	if (!config.botEnable) {
 		plugin_log("Discord bot has been disabled. Chat messages will not be relayed.");
@@ -246,7 +246,7 @@ events.serverOpen.on(() => {
 	// reload bot
 	command.register("clamor", "Reloads Clamor-Chatbot Discord Relay").overload((param, origin, output) => {
 		plugin_log("Reloading Clamor-Chatbot...");
-		bot.destroy().then() => loadBot();
+		bot.destroy().then(() => loadBot());
 		bot.once("ready", () => {
 			plugin_log("Clamor-Chatbot reloaded.");
 		});
@@ -274,14 +274,14 @@ events.serverOpen.on(() => {
 					bedrockServer.stop();
 				},10000);
 			}
-		},1000);
+		},500);
 	}
 });
 
 // Server shutdown
 events.serverClose.on(() => {
 	if (config.enableStartStopMessages) sendToDiscord(config.discordStopMessage); // Send shutdown message
-	bot.destroy().then => { plugin_log("Plugin shutting down."); bot = null; }; // Destroy bot
+	bot.destroy().then(() => { plugin_log("Plugin shutting down."); }); // Destroy bot
 	clearInterval(mem_watchdog);
 });
 
