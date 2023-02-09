@@ -232,7 +232,7 @@ function listCommand() { // Discord "!list" command that sends player list to di
 
 
 // Server startup
-let memory_watchdog: any;
+let mem_watchdog: any;
 events.serverOpen.on(() => {
 	plugin_log("Starting Clamor-Chatbot.");
 	plugin_log(`Clamor-Chatbot is version ${version}.`);
@@ -256,7 +256,7 @@ events.serverOpen.on(() => {
 	command.register("freemem", "Returns system memory state").overload((param, origin, output) => {
 		var totalMem = Number(((totalmem()/1024)/1024).toFixed(2));
 		var freeMem = Number(((freemem()/1024)/1024).toFixed(2));
-		var usedMem = totalMem - freeMem;
+		var usedMem = Number((totalMem - freeMem).toFixed(2));
 		var percentMem = Math.round((usedMem/totalMem)*100);
 		
 		output.success(`Total Memory: ${totalMem}M\nUsed Memory: ${usedMem}M/${percentMem}%\nFree Memory: ${freeMem}`);
