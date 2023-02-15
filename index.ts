@@ -236,8 +236,9 @@ let mem_watchdog: any;
 // Server shutdown
 events.serverClose.on(() => {
 	if (config.enableStartStopMessages) sendToDiscord(config.discordStopMessage); // Send shutdown message
-	bot.destroy().then(() => { plugin_log("Plugin shutting down."); }); // Destroy bot
 	clearInterval(mem_watchdog);
+	plugin_log("Plugin shutting down.");
+	bot.destroy(); // Destroy bot so node doesn't hang
 });
 
 // Player join
