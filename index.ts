@@ -231,8 +231,38 @@ function listCommand() { // Discord "!list" command that sends player list to di
 */
 
 
-// Server startup
+
 let mem_watchdog: any;
+// Server shutdown
+events.serverClose.on(() => {
+	if (config.enableStartStopMessages) sendToDiscord(config.discordStopMessage); // Send shutdown message
+	bot.destroy().then(() => { plugin_log("Plugin shutting down."); }); // Destroy bot
+	clearInterval(mem_watchdog);
+});
+
+// Player join
+events.playerJoin.on(({ player }) => {
+	if (config.enableJoinMessages) sendToDiscord(config.discordJoinMessage.start + player.getName() + config.discordJoinMessage.end);
+});
+
+// Player left
+events.playerLeft.on(({ player }) => {
+	if (config.enableJoinMessages) sendToDiscord(config.discordLeftMessage.start + player.getName() + config.discordLeftMessage.end);
+});
+
+// Relay chat message to Discord
+events.packetBefore(MinecraftPacketIds.Text).on(({ name, message }) => {
+	// remove formatting codes
+	while (message.search("\u00a7") >= 0) {
+		let format_code = message.match("\u00a7");
+		if (format_code == null) break;
+		else message = message.slice(format_code.index+2);
+	}
+	
+	if (config.enableChatRelay) sendToDiscord(config.toDiscordChatPrefix.start + name + config.toDiscordChatPrefix.end + " " + message);
+});
+
+// Server startup
 events.serverOpen.on(() => {
 	plugin_log("Starting Clamor-Chatbot.");
 	plugin_log(`Clamor-Chatbot is version ${version}.`);
@@ -277,33 +307,3 @@ events.serverOpen.on(() => {
 		},500);
 	}
 });
-
-// Server shutdown
-events.serverClose.on(() => {
-	if (config.enableStartStopMessages) sendToDiscord(config.discordStopMessage); // Send shutdown message
-	bot.destroy().then(() => { plugin_log("Plugin shutting down."); }); // Destroy bot
-	clearInterval(mem_watchdog);
-});
-
-// Player join
-events.playerJoin.on(({ player }) => {
-	if (config.enableJoinMessages) sendToDiscord(config.discordJoinMessage.start + player.getName() + config.discordJoinMessage.end);
-});
-
-// Player left
-events.playerLeft.on(({ player }) => {
-	if (config.enableJoinMessages) sendToDiscord(config.discordLeftMessage.start + player.getName() + config.discordLeftMessage.end);
-});
-
-// Relay chat message to Discord
-events.packetBefore(MinecraftPacketIds.Text).on(({ name, message }) => {
-	// remove formatting codes
-	while (message.search("\u00a7") >= 0) {
-		let format_code = message.match("\u00a7");
-		if (format_code == null) break;
-		else message = message.slice(format_code.index+2);
-	}
-	
-	if (config.enableChatRelay) sendToDiscord(config.toDiscordChatPrefix.start + name + config.toDiscordChatPrefix.end + " " + message);
-});
-
